@@ -36,13 +36,19 @@
 #include <inttypes.h>
 #include <secp256k1_ecdh.h>
 #include <sodium/randombytes.h>
+#include <stdio.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <termios.h>
+#include <time.h>
 #include <unistd.h>
 #include <wally_bip32.h>
 #include <wire/gen_peer_wire.h>
 #include <wire/wire_io.h>
+#include <yajl_tree.h>
+#include "hidapi.h"
 
 #define REQ_FD 3
 
@@ -69,6 +75,26 @@ static UINTMAP(struct client *) clients;
 static struct client *dbid_zero_clients[3];
 static size_t num_dbid_zero_clients;
 
+//static void commander_parse(char *buf) {
+//	yajl_val json_node;
+//	const char *success = "success";
+//	char errbuf[1024];
+//	json_node = yajl_tree_parse(buf, errbuf, sizeof(errbuf));
+//	//for (int cmd = 0; cmd < CMD_NUM; cmd++) {
+//	if (json_node == NULL) {
+//		fprintf(stderr, "parse_error: ");
+//		if (strlen(errbuf)) fprintf(stderr, " %s", errbuf);
+//		else fprintf(stderr, "unknown error");
+//		fprintf(stderr, "\n");
+//	}
+//	const char *status[] = { "status", (const char *) 0 };
+//	const char *cStatus = YAJL_GET_STRING(yajl_tree_get(json_node, status, yajl_t_string));
+//	if (strcmp(cStatus, success)) {
+//			fprintf(stderr, "Failure received from HSM");
+//	}
+//	// TODO(stx): handle API responses
+//}
+
 /* Function declarations for later */
 static struct io_plan *handle_client(struct io_conn *conn,
 				     struct daemon_conn *dc);
@@ -91,14 +117,19 @@ static void node_key(struct privkey *node_privkey, struct pubkey *node_id)
 		node_id = &unused_k;
 
 	do {
+		// TODO(stx): pass the salt to the BitBox to derive a private key for 
+		// the calculation of the EC pubkey. Change this function to not 
+		// return the private_key.
 		hkdf_sha256(node_privkey, sizeof(*node_privkey),
-			    &salt, sizeof(salt),
-			    &secretstuff.hsm_secret,
-			    sizeof(secretstuff.hsm_secret),
-			    "nodeid", 6);
+					&salt, sizeof(salt),
+					&secretstuff.hsm_secret,
+					sizeof(secretstuff.hsm_secret),
+					"nodeid", 6);
 		salt++;
+		// TODO(stx): returns the EC pub key. We should do the calculation 
+		// on the BitBox.
 	} while (!secp256k1_ec_pubkey_create(secp256k1_ctx, &node_id->pubkey,
-					     node_privkey->secret.data));
+							 node_privkey->secret.data));
 }
 
 static void destroy_client(struct client *c)
@@ -199,9 +230,9 @@ static struct io_plan *handle_ecdh(struct io_conn *conn, struct daemon_conn *dc)
 
 	node_key(&privkey, NULL);
 	if (secp256k1_ecdh(secp256k1_ctx, ss.data, &point.pubkey,
-			   privkey.secret.data) != 1) {
+				 privkey.secret.data) != 1) {
 		status_broken("secp256k1_ecdh fail for client %s",
-			      type_to_string(tmpctx, struct pubkey, &c->id));
+						type_to_string(tmpctx, struct pubkey, &c->id));
 		daemon_conn_send(c->master,
 				 take(towire_hsmstatus_client_bad_request(NULL,
 								&c->id,
@@ -234,7 +265,7 @@ static struct io_plan *handle_cannouncement_sig(struct io_conn *conn,
 
 	if (!fromwire_hsm_cannouncement_sig_req(tmpctx, dc->msg_in, &ca)) {
 		status_broken("Failed to parse cannouncement_sig_req: %s",
-			      tal_hex(tmpctx, dc->msg_in));
+						tal_hex(tmpctx, dc->msg_in));
 		return io_close(conn);
 	}
 
@@ -248,6 +279,7 @@ static struct io_plan *handle_cannouncement_sig(struct io_conn *conn,
 	node_key(&node_pkey, NULL);
 	sha256_double(&hash, ca + offset, tal_count(ca) - offset);
 
+	// TODO: pass the hash to the BitBox and return node_sig.
 	sign_hash(&node_pkey, &hash, &node_sig);
 	sign_hash(&funding_privkey, &hash, &bitcoin_sig);
 
@@ -275,34 +307,35 @@ static struct io_plan *handle_channel_update_sig(struct io_conn *conn,
 
 	if (!fromwire_hsm_cupdate_sig_req(tmpctx, dc->msg_in, &cu)) {
 		status_broken("Failed to parse %s: %s",
-			      hsm_client_wire_type_name(fromwire_peektype(dc->msg_in)),
-			      tal_hex(tmpctx, dc->msg_in));
+						hsm_client_wire_type_name(fromwire_peektype(dc->msg_in)),
+						tal_hex(tmpctx, dc->msg_in));
 		return io_close(conn);
 	}
 
 	if (!fromwire_channel_update(cu, &sig, &chain_hash,
-				     &scid, &timestamp, &flags,
-				     &cltv_expiry_delta, &htlc_minimum_msat,
-				     &fee_base_msat, &fee_proportional_mill)) {
+						 &scid, &timestamp, &flags,
+						 &cltv_expiry_delta, &htlc_minimum_msat,
+						 &fee_base_msat, &fee_proportional_mill)) {
 		status_broken("Failed to parse inner channel_update: %s",
-			      tal_hex(tmpctx, dc->msg_in));
+						tal_hex(tmpctx, dc->msg_in));
 		return io_close(conn);
 	}
 	if (tal_count(cu) < offset) {
 		status_broken("inner channel_update too short: %s",
-			      tal_hex(tmpctx, dc->msg_in));
+						tal_hex(tmpctx, dc->msg_in));
 		return io_close(conn);
 	}
 
 	node_key(&node_pkey, NULL);
 	sha256_double(&hash, cu + offset, tal_count(cu) - offset);
 
+	// TODO: pass the hash to the BitBox and return node_sig.
 	sign_hash(&node_pkey, &hash, &sig);
 
 	cu = towire_channel_update(tmpctx, &sig, &chain_hash,
-				   &scid, timestamp, flags,
-				   cltv_expiry_delta, htlc_minimum_msat,
-				   fee_base_msat, fee_proportional_mill);
+					 &scid, timestamp, flags,
+					 cltv_expiry_delta, htlc_minimum_msat,
+					 fee_base_msat, fee_proportional_mill);
 
 	daemon_conn_send(dc, take(towire_hsm_cupdate_sig_reply(NULL, cu)));
 	return daemon_conn_read_next(conn, dc);
@@ -331,6 +364,7 @@ static struct io_plan *handle_get_channel_basepoints(struct io_conn *conn,
 }
 
 /* FIXME: Ensure HSM never does this twice for same dbid! */
+// This function prepares the multisig script and signs it.
 static struct io_plan *handle_sign_commitment_tx(struct io_conn *conn,
 						 struct daemon_conn *dc)
 {
@@ -834,7 +868,7 @@ fail:
 }
 
 static bool check_client_capabilities(struct client *client,
-				      enum hsm_client_wire_type t)
+							enum hsm_client_wire_type t)
 {
 	switch (t) {
 	case WIRE_HSM_ECDH_REQ:
@@ -893,7 +927,7 @@ static bool check_client_capabilities(struct client *client,
 }
 
 static struct io_plan *handle_client(struct io_conn *conn,
-				     struct daemon_conn *dc)
+						 struct daemon_conn *dc)
 {
 	struct client *c = container_of(dc, struct client, dc);
 	enum hsm_client_wire_type t = fromwire_peektype(dc->msg_in);
@@ -906,7 +940,7 @@ static struct io_plan *handle_client(struct io_conn *conn,
 		status_broken("Client does not have the required capability to run %d", t);
 		daemon_conn_send(c->master,
 				 take(towire_hsmstatus_client_bad_request(
-				     NULL, &c->id, dc->msg_in)));
+						 NULL, &c->id, dc->msg_in)));
 		return io_close(conn);
 	}
 
@@ -998,8 +1032,8 @@ static struct io_plan *handle_client(struct io_conn *conn,
 
 	daemon_conn_send(c->master,
 			 take(towire_hsmstatus_client_bad_request(NULL,
-								  &c->id,
-								  dc->msg_in)));
+									&c->id,
+									dc->msg_in)));
 	return io_close(conn);
 }
 
@@ -1010,6 +1044,10 @@ static void send_init_response(struct daemon_conn *master)
 
 	node_key(NULL, &node_id);
 
+	// TODO: secretstuff.bip32 leaks unnecessarily, because only the public key
+	// is serialized (in bip32.c towire_ext_key). We can use libwally/bip32.c on
+	// the BitBox to return a serialized bip32 public key and hand it to that
+	// function.
 	msg = towire_hsm_init_reply(NULL, &node_id, &secretstuff.bip32);
 	daemon_conn_send(master, take(msg));
 }
@@ -1023,14 +1061,14 @@ static void populate_secretstuff(void)
 	/* Fill in the BIP32 tree for bitcoin addresses. */
 	do {
 		hkdf_sha256(bip32_seed, sizeof(bip32_seed),
-			    &salt, sizeof(salt),
-			    &secretstuff.hsm_secret,
-			    sizeof(secretstuff.hsm_secret),
-			    "bip32 seed", strlen("bip32 seed"));
+					&salt, sizeof(salt),
+					&secretstuff.hsm_secret,
+					sizeof(secretstuff.hsm_secret),
+					"bip32 seed", strlen("bip32 seed"));
 		salt++;
 	} while (bip32_key_from_seed(bip32_seed, sizeof(bip32_seed),
-				     BIP32_VER_TEST_PRIVATE,
-				     0, &master_extkey) != WALLY_OK);
+						 BIP32_VER_TEST_PRIVATE,
+						 0, &master_extkey) != WALLY_OK);
 
 	/* BIP 32:
 	 *
@@ -1049,124 +1087,93 @@ static void populate_secretstuff(void)
 	 * separate keychains for these should use the external one for
 	 * everything.
 	 *
-	 *  - m/iH/0/k corresponds to the k'th keypair of the external chain of account number i of the HDW derived from master m.
+	 *	- m/iH/0/k corresponds to the k'th keypair of the external chain of account number i of the HDW derived from master m.
 	 */
 	/* Hence child 0, then child 0 again to get extkey to derive from. */
 	if (bip32_key_from_parent(&master_extkey, 0, BIP32_FLAG_KEY_PRIVATE,
-				  &child_extkey) != WALLY_OK)
+					&child_extkey) != WALLY_OK)
 		status_failed(STATUS_FAIL_INTERNAL_ERROR,
-			      "Can't derive child bip32 key");
+						"Can't derive child bip32 key");
 
 	if (bip32_key_from_parent(&child_extkey, 0, BIP32_FLAG_KEY_PRIVATE,
-				  &secretstuff.bip32) != WALLY_OK)
+					&secretstuff.bip32) != WALLY_OK)
 		status_failed(STATUS_FAIL_INTERNAL_ERROR,
-			      "Can't derive private bip32 key");
+						"Can't derive private bip32 key");
 }
 
+// TODO: put on BitBox so that BIP32 private key doesn't need to be exposed.
 static void bitcoin_pubkey(struct pubkey *pubkey, u32 index)
 {
 	struct ext_key ext;
 
 	if (index >= BIP32_INITIAL_HARDENED_CHILD)
 		status_failed(STATUS_FAIL_MASTER_IO,
-			      "Index %u too great", index);
+						"Index %u too great", index);
 
 	if (bip32_key_from_parent(&secretstuff.bip32, index,
-				  BIP32_FLAG_KEY_PUBLIC, &ext) != WALLY_OK)
+					BIP32_FLAG_KEY_PUBLIC, &ext) != WALLY_OK)
 		status_failed(STATUS_FAIL_INTERNAL_ERROR,
-			      "BIP32 of %u failed", index);
+						"BIP32 of %u failed", index);
 
 	if (!secp256k1_ec_pubkey_parse(secp256k1_ctx, &pubkey->pubkey,
-				       ext.pub_key, sizeof(ext.pub_key)))
+							 ext.pub_key, sizeof(ext.pub_key)))
 		status_failed(STATUS_FAIL_INTERNAL_ERROR,
-			      "Parse of BIP32 child %u pubkey failed", index);
+						"Parse of BIP32 child %u pubkey failed", index);
 }
 
 static void bitcoin_keypair(struct privkey *privkey,
-			    struct pubkey *pubkey,
-			    u32 index)
+					struct pubkey *pubkey,
+					u32 index)
 {
 	struct ext_key ext;
 
 	if (index >= BIP32_INITIAL_HARDENED_CHILD)
 		status_failed(STATUS_FAIL_MASTER_IO,
-			      "Index %u too great", index);
+						"Index %u too great", index);
 
 	if (bip32_key_from_parent(&secretstuff.bip32, index,
-				  BIP32_FLAG_KEY_PRIVATE, &ext) != WALLY_OK)
+					BIP32_FLAG_KEY_PRIVATE, &ext) != WALLY_OK)
 		status_failed(STATUS_FAIL_INTERNAL_ERROR,
-			      "BIP32 of %u failed", index);
+						"BIP32 of %u failed", index);
 
 	/* libwally says: The private key with prefix byte 0 */
 	memcpy(privkey->secret.data, ext.priv_key+1, 32);
 	if (!secp256k1_ec_pubkey_create(secp256k1_ctx, &pubkey->pubkey,
 					privkey->secret.data))
 		status_failed(STATUS_FAIL_INTERNAL_ERROR,
-			      "BIP32 pubkey %u create failed", index);
+						"BIP32 pubkey %u create failed", index);
 }
 
-static void maybe_create_new_hsm(void)
-{
-	int fd = open("hsm_secret", O_CREAT|O_EXCL|O_WRONLY, 0400);
-	if (fd < 0) {
-		if (errno == EEXIST)
-			return;
-		status_failed(STATUS_FAIL_INTERNAL_ERROR,
-			      "creating: %s", strerror(errno));
-	}
-
-	randombytes_buf(&secretstuff.hsm_secret, sizeof(secretstuff.hsm_secret));
-	if (!write_all(fd, &secretstuff.hsm_secret, sizeof(secretstuff.hsm_secret))) {
-		unlink_noerr("hsm_secret");
-		status_failed(STATUS_FAIL_INTERNAL_ERROR,
-			      "writing: %s", strerror(errno));
-	}
-	if (fsync(fd) != 0) {
-		unlink_noerr("hsm_secret");
-		status_failed(STATUS_FAIL_INTERNAL_ERROR,
-			      "fsync: %s", strerror(errno));
-	}
-	if (close(fd) != 0) {
-		unlink_noerr("hsm_secret");
-		status_failed(STATUS_FAIL_INTERNAL_ERROR,
-			      "closing: %s", strerror(errno));
-	}
-	fd = open(".", O_RDONLY);
-	if (fd < 0) {
-		status_failed(STATUS_FAIL_INTERNAL_ERROR,
-			      "opening: %s", strerror(errno));
-	}
-	if (fsync(fd) != 0) {
-		unlink_noerr("hsm_secret");
-		status_failed(STATUS_FAIL_INTERNAL_ERROR,
-			      "fsyncdir: %s", strerror(errno));
-	}
-	close(fd);
-	status_unusual("HSM: created new hsm_secret file");
-}
-
-static void load_hsm(void)
-{
-	int fd = open("hsm_secret", O_RDONLY);
-	if (fd < 0)
-		status_failed(STATUS_FAIL_INTERNAL_ERROR,
-			      "opening: %s", strerror(errno));
-	if (!read_all(fd, &secretstuff.hsm_secret, sizeof(secretstuff.hsm_secret)))
-		status_failed(STATUS_FAIL_INTERNAL_ERROR,
-			      "reading: %s", strerror(errno));
-	close(fd);
-
-	populate_secretstuff();
-}
+// TODO(stx): add routine that checks if device was removed.
 
 static void init_hsm(struct daemon_conn *master, const u8 *msg)
 {
-
 	if (!fromwire_hsm_init(msg))
 		master_badmsg(WIRE_HSM_INIT, msg);
+	
+	int ret = hid_init();
+	if (ret == -1) {
+		printf("failed to init HID");
+		return;
+	}
+	printf("querying device path\n");
+	// TODO(stx): use product_if of new BitBox
+	short vendor_id = 0x03eb;
+	short product_id = 0x2402;
+	struct hid_device_info* device_info = NULL;
+	do {
+		device_info = hid_enumerate(vendor_id, product_id);
+		if (device_info == NULL) {
+			sleep(1);
+		}
+	} while (device_info == NULL);
+	printf("device path: %s\n", device_info->path);
+	hid_open_path(device_info->path);
 
-	maybe_create_new_hsm();
-	load_hsm();
+	// Note: we no longer need to read the hsm_secret (it doesn't exist on the client anymore), but
+	// we do still derive BIP32 keys etc in populate_secretstuff() below.
+	// TODO(stx): get rid of this routine
+	populate_secretstuff();
 
 	send_init_response(master);
 }
@@ -1199,9 +1206,9 @@ static void derive_peer_seed(struct secret *peer_seed, struct secret *peer_seed_
 	memcpy(input + PUBKEY_DER_LEN, &channel_id, sizeof(channel_id));
 
 	hkdf_sha256(peer_seed, sizeof(*peer_seed),
-		    input, sizeof(input),
-		    peer_seed_base, sizeof(*peer_seed_base),
-		    info, strlen(info));
+				input, sizeof(input),
+				peer_seed_base, sizeof(*peer_seed_base),
+				info, strlen(info));
 }
 
 static void hsm_unilateral_close_privkey(struct privkey *dst,
@@ -1215,10 +1222,10 @@ static void hsm_unilateral_close_privkey(struct privkey *dst,
 	derive_basepoints(&peer_seed, NULL, &basepoints, &secrets, NULL);
 
 	if (!derive_simple_privkey(&secrets.payment_basepoint_secret,
-				   &basepoints.payment, &info->commitment_point,
-				   dst)) {
+					 &basepoints.payment, &info->commitment_point,
+					 dst)) {
 		status_failed(STATUS_FAIL_INTERNAL_ERROR,
-			      "Deriving unilateral_close_privkey");
+						"Deriving unilateral_close_privkey");
 	}
 }
 
@@ -1226,7 +1233,7 @@ static void hsm_unilateral_close_privkey(struct privkey *dst,
  * hsm_key_for_utxo - generate the keypair matching the utxo
  */
 static void hsm_key_for_utxo(struct privkey *privkey, struct pubkey *pubkey,
-			     const struct utxo *utxo)
+					 const struct utxo *utxo)
 {
 	if (utxo->close_info != NULL) {
 		/* This is a their_unilateral_close/to-us output, so
@@ -1257,9 +1264,9 @@ static void sign_funding_tx(struct daemon_conn *master, const u8 *msg)
 
 	/* FIXME: Check fee is "reasonable" */
 	if (!fromwire_hsm_sign_funding(tmpctx, msg,
-				       &satoshi_out, &change_out,
-				       &change_keyindex, &local_pubkey,
-				       &remote_pubkey, &utxomap))
+							 &satoshi_out, &change_out,
+							 &change_keyindex, &local_pubkey,
+							 &remote_pubkey, &utxomap))
 		master_badmsg(WIRE_HSM_SIGN_FUNDING, msg);
 
 	if (change_out) {
@@ -1291,7 +1298,7 @@ static void sign_funding_tx(struct daemon_conn *master, const u8 *msg)
 		u8 *wscript = p2wpkh_scriptcode(tmpctx, &inkey);
 
 		sign_tx_input(tx, i, subscript, wscript, &inprivkey, &inkey,
-			      &sig);
+						&sig);
 
 		tx->input[i].witness = bitcoin_witness_p2wpkh(tx, &sig, &inkey);
 
@@ -1312,6 +1319,7 @@ static void sign_funding_tx(struct daemon_conn *master, const u8 *msg)
 /**
  * sign_withdrawal_tx - Generate and sign a withdrawal transaction from the master
  */
+// TODO: mode this code to BitBox
 static void sign_withdrawal_tx(struct daemon_conn *master, const u8 *msg)
 {
 	u64 satoshi_out, change_out;
@@ -1324,17 +1332,17 @@ static void sign_withdrawal_tx(struct daemon_conn *master, const u8 *msg)
 	u8 *scriptpubkey;
 
 	if (!fromwire_hsm_sign_withdrawal(tmpctx, msg, &satoshi_out,
-					  &change_out, &change_keyindex,
-					  &scriptpubkey, &utxos)) {
+						&change_out, &change_keyindex,
+						&scriptpubkey, &utxos)) {
 		status_broken("Failed to parse sign_withdrawal: %s",
-			      tal_hex(tmpctx, msg));
+						tal_hex(tmpctx, msg));
 		return;
 	}
 
 	if (bip32_key_from_parent(&secretstuff.bip32, change_keyindex,
-				  BIP32_FLAG_KEY_PUBLIC, &ext) != WALLY_OK) {
+					BIP32_FLAG_KEY_PUBLIC, &ext) != WALLY_OK) {
 		status_broken("Failed to parse sign_withdrawal: %s",
-			      tal_hex(tmpctx, msg));
+						tal_hex(tmpctx, msg));
 		return;
 	}
 
@@ -1361,7 +1369,7 @@ static void sign_withdrawal_tx(struct daemon_conn *master, const u8 *msg)
 		u8 *wscript = p2wpkh_scriptcode(tmpctx, &inkey);
 
 		sign_tx_input(tx, i, subscript, wscript, &inprivkey, &inkey,
-			      &sig);
+						&sig);
 
 		tx->input[i].witness = bitcoin_witness_p2wpkh(tx, &sig, &inkey);
 
@@ -1388,13 +1396,13 @@ static void sign_invoice(struct daemon_conn *master, const u8 *msg)
 	u8 *hrpu8;
 	char *hrp;
 	struct sha256 sha;
-        secp256k1_ecdsa_recoverable_signature rsig;
+				secp256k1_ecdsa_recoverable_signature rsig;
 	struct hash_u5 hu5;
 	struct privkey node_pkey;
 
 	if (!fromwire_hsm_sign_invoice(tmpctx, msg, &u5bytes, &hrpu8)) {
 		status_broken("Failed to parse sign_invoice: %s",
-			      tal_hex(tmpctx, msg));
+						tal_hex(tmpctx, msg));
 		return;
 	}
 
@@ -1408,13 +1416,13 @@ static void sign_invoice(struct daemon_conn *master, const u8 *msg)
 	hash_u5_done(&hu5, &sha);
 
 	node_key(&node_pkey, NULL);
-        if (!secp256k1_ecdsa_sign_recoverable(secp256k1_ctx, &rsig,
-                                              (const u8 *)&sha,
-                                              node_pkey.secret.data,
-                                              NULL, NULL)) {
+				if (!secp256k1_ecdsa_sign_recoverable(secp256k1_ctx, &rsig,
+																							(const u8 *)&sha,
+																							node_pkey.secret.data,
+																							NULL, NULL)) {
 		status_failed(STATUS_FAIL_INTERNAL_ERROR,
-			      "Failed to sign invoice: %s",
-			      tal_hex(tmpctx, msg));
+						"Failed to sign invoice: %s",
+						tal_hex(tmpctx, msg));
 	}
 
 	daemon_conn_send(master,
@@ -1433,14 +1441,14 @@ static void sign_node_announcement(struct daemon_conn *master, const u8 *msg)
 
 	if (!fromwire_hsm_node_announcement_sig_req(msg, msg, &ann)) {
 		status_failed(STATUS_FAIL_GOSSIP_IO,
-			      "Failed to parse node_announcement_sig_req: %s",
-			     tal_hex(tmpctx, msg));
+						"Failed to parse node_announcement_sig_req: %s",
+					 tal_hex(tmpctx, msg));
 	}
 
 	if (tal_count(ann) < offset) {
 		status_failed(STATUS_FAIL_GOSSIP_IO,
-			      "Node announcement too short: %s",
-			      tal_hex(tmpctx, msg));
+						"Node announcement too short: %s",
+						tal_hex(tmpctx, msg));
 	}
 
 	/* FIXME(cdecker) Check the node announcement's content */
@@ -1494,4 +1502,6 @@ int main(int argc, char *argv[])
 	io_loop(NULL, NULL);
 	abort();
 }
+
+
 #endif

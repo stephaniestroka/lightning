@@ -4,6 +4,8 @@
 #include <common/utils.h>
 #include <wire/wire.h>
 
+
+// TODO: seed should only be available on BitBox
 bool derive_basepoints(const struct secret *seed,
 		       struct pubkey *funding_pubkey,
 		       struct basepoints *basepoints,

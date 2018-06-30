@@ -1,0 +1,651 @@
+channeld/channel.c:	    tmpctx, &peer->channel->funding_pubkey[LOCAL], ca);
+channeld/channel.c:	    &peer->node_ids[second], &peer->channel->funding_pubkey[first],
+channeld/channel.c:	    &peer->channel->funding_pubkey[second]);
+channeld/channel.c:	if (peer->channel->funder != REMOTE)
+channeld/channel.c:				   &peer->channel->basepoints[LOCAL].htlc,
+channeld/channel.c:	if (!derive_simple_key(&peer->channel->basepoints[LOCAL].htlc,
+channeld/channel.c:				    &peer->channel->basepoints[LOCAL].htlc),
+channeld/channel.c:		      &peer->channel->funding_pubkey[LOCAL],
+channeld/channel.c:				    &peer->channel->funding_pubkey[LOCAL]));
+channeld/channel.c:	if (peer->channel->funder == LOCAL
+channeld/channel.c:	if (peer->channel->funder == REMOTE)
+channeld/channel.c:						 peer->channel->view[LOCAL]
+channeld/channel.c:	if (!derive_simple_key(&peer->channel->basepoints[REMOTE].htlc,
+channeld/channel.c:				    &peer->channel->basepoints[REMOTE].htlc),
+channeld/channel.c:			  &peer->channel->funding_pubkey[REMOTE], &commit_sig)) {
+channeld/channel.c:					   &peer->channel->funding_pubkey
+channeld/channel.c:		     side_to_str(peer->channel->funder),
+channeld/channel.c:	if (peer->channel->funder == LOCAL) {
+channeld/channel.c:	for (htlc = htlc_map_first(peer->channel->htlcs, &it);
+channeld/channel.c:	     htlc = htlc_map_next(peer->channel->htlcs, &it)) {
+channeld/channel.c:	if (peer->channel->funder == LOCAL)
+channeld/channel.c:		peer->channel->changes_pending[LOCAL] = true;
+channeld/channel.c:	if (peer->channel->funder == LOCAL) {
+channeld/channel.c:	if (peer->channel->funder == LOCAL)
+channeld/full_channel.c:		channel->view[REMOTE].feerate_per_kw = feerate_per_kw[REMOTE];
+channeld/full_channel.c:		channel->htlcs = tal(channel, struct htlc_map);
+channeld/full_channel.c:		htlc_map_init(channel->htlcs);
+channeld/full_channel.c:		tal_add_destructor(channel->htlcs, htlc_map_clear);
+channeld/full_channel.c:	for (htlc = htlc_map_first(channel->htlcs, &it);
+channeld/full_channel.c:	     htlc = htlc_map_next(channel->htlcs, &it)) {
+channeld/full_channel.c:	if (!channel->htlcs)
+channeld/full_channel.c:	for (htlc = htlc_map_first(channel->htlcs, &it);
+channeld/full_channel.c:	     htlc = htlc_map_next(channel->htlcs, &it)) {
+channeld/full_channel.c:	u32 feerate_per_kw = channel->view[side].feerate_per_kw;
+channeld/full_channel.c:			   &channel->basepoints[side].payment,
+channeld/full_channel.c:			   &channel->basepoints[!side].payment,
+channeld/full_channel.c:			   &channel->basepoints[side].htlc,
+channeld/full_channel.c:			   &channel->basepoints[!side].htlc,
+channeld/full_channel.c:			   &channel->basepoints[side].delayed_payment,
+channeld/full_channel.c:			   &channel->basepoints[!side].revocation,
+channeld/full_channel.c:	txs[0] = commit_tx(ctx, &channel->funding_txid,
+channeld/full_channel.c:		       channel->funding_txout,
+channeld/full_channel.c:		       channel->funding_msat / 1000,
+channeld/full_channel.c:		       channel->funder,
+channeld/full_channel.c:		       channel->view[side].feerate_per_kw,
+channeld/full_channel.c:		       channel->view[side].owed_msat[side],
+channeld/full_channel.c:		       channel->view[side].owed_msat[!side],
+channeld/full_channel.c:		       commitment_number ^ channel->commitment_number_obscurer,
+channeld/full_channel.c:					     &channel->funding_pubkey[side],
+channeld/full_channel.c:					     &channel->funding_pubkey[!side]);
+channeld/full_channel.c:	old = htlc_get(channel->htlcs, htlc->id, htlc_owner(htlc));
+channeld/full_channel.c:	view = &channel->view[recipient];
+channeld/full_channel.c:	if (channel->funder == htlc_owner(htlc)) {
+channeld/full_channel.c:	htlc_map_add(channel->htlcs, tal_steal(channel, htlc));
+channeld/full_channel.c:		channel->changes_pending[LOCAL] = true;
+channeld/full_channel.c:		channel->changes_pending[REMOTE] = true;
+channeld/full_channel.c:	return htlc_get(channel->htlcs, id, sender);
+channeld/full_channel.c:	channel->changes_pending[owner] = true;
+channeld/full_channel.c:	channel->changes_pending[owner] = true;
+channeld/full_channel.c:		channel->view[sidechanged].owed_msat[LOCAL]
+channeld/full_channel.c:		channel->view[sidechanged].owed_msat[REMOTE]
+channeld/full_channel.c:		channel->view[sidechanged].owed_msat[LOCAL]
+channeld/full_channel.c:		channel->view[sidechanged].owed_msat[REMOTE]
+channeld/full_channel.c:	for (h = htlc_map_first(channel->htlcs, &it);
+channeld/full_channel.c:	     h = htlc_map_next(channel->htlcs, &it)) {
+channeld/full_channel.c:	gather_htlcs(tmpctx, channel, !channel->funder,
+channeld/full_channel.c:	return channel->view[!channel->funder].owed_msat[channel->funder]
+channeld/full_channel.c:	u64 fee_msat, dust = dust_limit_satoshis(channel, !channel->funder);
+channeld/full_channel.c:	gather_htlcs(tmpctx, channel, !channel->funder,
+channeld/full_channel.c:					    !channel->funder)
+channeld/full_channel.c:						  !channel->funder)
+channeld/full_channel.c:						  !channel->funder);
+channeld/full_channel.c:	return channel->view[!channel->funder].owed_msat[channel->funder]
+channeld/full_channel.c:		>= channel_reserve_msat(channel, channel->funder) + fee_msat;
+channeld/full_channel.c:		     side_to_str(!channel->funder), feerate_per_kw);
+channeld/full_channel.c:	channel->view[!channel->funder].feerate_per_kw = feerate_per_kw;
+channeld/full_channel.c:	channel->changes_pending[!channel->funder] = true;
+channeld/full_channel.c:	return channel->view[side].feerate_per_kw;
+channeld/full_channel.c:	if (!channel->changes_pending[REMOTE]) {
+channeld/full_channel.c:	channel->changes_pending[REMOTE] = false;
+channeld/full_channel.c:		channel->changes_pending[LOCAL] = true;
+channeld/full_channel.c:	if (channel->funder == LOCAL &&
+channeld/full_channel.c:	    (channel->view[LOCAL].feerate_per_kw
+channeld/full_channel.c:	     != channel->view[REMOTE].feerate_per_kw)) {
+channeld/full_channel.c:			     channel->view[REMOTE].feerate_per_kw);
+channeld/full_channel.c:		channel->view[LOCAL].feerate_per_kw
+channeld/full_channel.c:			= channel->view[REMOTE].feerate_per_kw;
+channeld/full_channel.c:		channel->changes_pending[LOCAL] = true;
+channeld/full_channel.c:	return channel->changes_pending[LOCAL];
+channeld/full_channel.c:	if (!channel->changes_pending[LOCAL]) {
+channeld/full_channel.c:	channel->changes_pending[LOCAL] = false;
+channeld/full_channel.c:		channel->changes_pending[REMOTE] = true;
+channeld/full_channel.c:	if (channel->funder == REMOTE
+channeld/full_channel.c:	    && (channel->view[LOCAL].feerate_per_kw
+channeld/full_channel.c:		!= channel->view[REMOTE].feerate_per_kw)) {
+channeld/full_channel.c:			     channel->view[LOCAL].feerate_per_kw);
+channeld/full_channel.c:		channel->view[REMOTE].feerate_per_kw
+channeld/full_channel.c:			= channel->view[LOCAL].feerate_per_kw;
+channeld/full_channel.c:		channel->changes_pending[REMOTE] = true;
+channeld/full_channel.c:	return channel->changes_pending[REMOTE];
+channeld/full_channel.c:	for (htlc = htlc_map_first(channel->htlcs, &it);
+channeld/full_channel.c:	     htlc = htlc_map_next(channel->htlcs, &it)) {
+channeld/full_channel.c:		channel->view[side].owed_msat[LOCAL]
+channeld/full_channel.c:		channel->view[side].owed_msat[REMOTE]
+channeld/full_channel.c:		channel->view[side].owed_msat[LOCAL]
+channeld/full_channel.c:		channel->view[side].owed_msat[REMOTE]
+Binary file channeld/channel.o matches
+Binary file channeld/test/run-full_channel.o matches
+Binary file channeld/test/run-full_channel matches
+channeld/test/run-full_channel.c:	if (channel->funder == LOCAL) {
+channeld/test/run-full_channel.c:	assert(lchannel->view[LOCAL].owed_msat[LOCAL]
+channeld/test/run-full_channel.c:	       == rchannel->view[REMOTE].owed_msat[REMOTE]);
+channeld/test/run-full_channel.c:	assert(lchannel->view[REMOTE].owed_msat[REMOTE]
+channeld/test/run-full_channel.c:	       == rchannel->view[LOCAL].owed_msat[LOCAL]);
+channeld/test/run-full_channel.c:	assert(lchannel->view[LOCAL].owed_msat[LOCAL]
+channeld/test/run-full_channel.c:	       == rchannel->view[REMOTE].owed_msat[REMOTE]);
+channeld/test/run-full_channel.c:	assert(lchannel->view[REMOTE].owed_msat[REMOTE]
+channeld/test/run-full_channel.c:	       == rchannel->view[LOCAL].owed_msat[LOCAL]);
+channeld/test/run-full_channel.c:		lchannel->view[LOCAL].feerate_per_kw = feerate_per_kw[LOCAL];
+channeld/test/run-full_channel.c:		rchannel->view[REMOTE].feerate_per_kw = feerate_per_kw[REMOTE];
+channeld/Makefile:	$(MAKE) -C ../.. lightningd/channel-all
+channeld/Makefile:clean: lightningd/channel-clean
+channeld/Makefile:lightningd/channel-clean:
+Binary file common/initial_channel.o matches
+common/initial_channel.h:	return channel->config[side]->dust_limit_satoshis;
+common/initial_channel.h:	return channel->config[recipient]->max_htlc_value_in_flight_msat;
+common/initial_channel.h:	return channel->config[recipient]->max_accepted_htlcs;
+common/initial_channel.h:	return channel->config[!side]->channel_reserve_satoshis * 1000;
+common/initial_channel.h:	return channel->config[recipient]->htlc_minimum_msat;
+common/initial_channel.h:	return channel->config[!side]->to_self_delay;
+common/initial_channel.c:	channel->funding_txid = *funding_txid;
+common/initial_channel.c:	channel->funding_txout = funding_txout;
+common/initial_channel.c:	channel->funding_msat = funding_satoshis * 1000;
+common/initial_channel.c:	if (local_msatoshi > channel->funding_msat)
+common/initial_channel.c:	channel->funder = funder;
+common/initial_channel.c:	channel->config[LOCAL] = local;
+common/initial_channel.c:	channel->config[REMOTE] = remote;
+common/initial_channel.c:	channel->funding_pubkey[LOCAL] = *local_funding_pubkey;
+common/initial_channel.c:	channel->funding_pubkey[REMOTE] = *remote_funding_pubkey;
+common/initial_channel.c:	channel->htlcs = NULL;
+common/initial_channel.c:	channel->changes_pending[LOCAL] = channel->changes_pending[REMOTE]
+common/initial_channel.c:	channel->view[LOCAL].feerate_per_kw
+common/initial_channel.c:		= channel->view[REMOTE].feerate_per_kw
+common/initial_channel.c:	channel->view[LOCAL].owed_msat[LOCAL]
+common/initial_channel.c:		= channel->view[REMOTE].owed_msat[LOCAL]
+common/initial_channel.c:	channel->view[REMOTE].owed_msat[REMOTE]
+common/initial_channel.c:		= channel->view[LOCAL].owed_msat[REMOTE]
+common/initial_channel.c:		= channel->funding_msat - local_msatoshi;
+common/initial_channel.c:	channel->basepoints[LOCAL] = *local_basepoints;
+common/initial_channel.c:	channel->basepoints[REMOTE] = *remote_basepoints;
+common/initial_channel.c:	channel->commitment_number_obscurer
+common/initial_channel.c:		= commit_number_obscurer(&channel->basepoints[funder].payment,
+common/initial_channel.c:					 &channel->basepoints[!funder].payment);
+common/initial_channel.c:	assert(!channel->htlcs);
+common/initial_channel.c:			   &channel->basepoints[side].payment,
+common/initial_channel.c:			   &channel->basepoints[!side].payment,
+common/initial_channel.c:			   &channel->basepoints[side].htlc,
+common/initial_channel.c:			   &channel->basepoints[!side].htlc,
+common/initial_channel.c:			   &channel->basepoints[side].delayed_payment,
+common/initial_channel.c:			   &channel->basepoints[!side].revocation,
+common/initial_channel.c:				       &channel->funding_pubkey[side],
+common/initial_channel.c:				       &channel->funding_pubkey[!side]);
+common/initial_channel.c:	return initial_commit_tx(ctx, &channel->funding_txid,
+common/initial_channel.c:				 channel->funding_txout,
+common/initial_channel.c:				 channel->funding_msat / 1000,
+common/initial_channel.c:				 channel->funder,
+common/initial_channel.c:				 channel->view[side].feerate_per_kw,
+common/initial_channel.c:				 channel->view[side].owed_msat[side],
+common/initial_channel.c:				 channel->view[side].owed_msat[!side],
+common/initial_channel.c:				 0 ^ channel->commitment_number_obscurer,
+common/initial_channel.c:		       channel->funding_msat,
+common/initial_channel.c:		       side_to_str(channel->funder),
+common/initial_channel.c:		       fmt_channel_view(ctx, &channel->view[LOCAL]),
+common/initial_channel.c:		       fmt_channel_view(ctx, &channel->view[REMOTE]));
+lightningd/pay.c:		log_unusual(hout->key.channel->log,
+lightningd/pay.c:		log_unusual(hout->key.channel->log,
+lightningd/pay.c:			log_info(hout->key.channel->log,
+lightningd/pay.c:			random_mark_channel_unroutable(hout->key.channel->log,
+lightningd/pay.c:			log_info(hout->key.channel->log,
+Binary file lightningd/lightning_openingd matches
+lightningd/channel.h:	return channel->state == CHANNELD_NORMAL;
+lightningd/channel.h:	return channel->state == CHANNELD_NORMAL
+lightningd/channel.h:		|| channel->state == CHANNELD_SHUTTING_DOWN;
+lightningd/channel.h:	return channel_state_on_chain(channel->state);
+lightningd/channel.h:	return channel->state != FUNDING_SPEND_SEEN
+lightningd/channel.h:		&& channel->state != CLOSINGD_COMPLETE
+lightningd/channel.c:	struct subd *old_owner = channel->owner;
+lightningd/channel.c:	channel->owner = owner;
+lightningd/channel.c:		if (channel->connected && !connects_to_peer(owner)) {
+lightningd/channel.c:							     &channel->peer->id);
+lightningd/channel.c:			subd_send_msg(channel->peer->ld->gossip, take(msg));
+lightningd/channel.c:			channel->connected = false;
+lightningd/channel.c:	channel->connected = connects_to_peer(owner);
+lightningd/channel.c:	struct lightningd *ld = channel->peer->ld;
+lightningd/channel.c:	struct lightningd *ld = channel->peer->ld;
+lightningd/channel.c:	list_del_from(&channel->peer->channels, &channel->list);
+lightningd/channel.c:	struct peer *peer = channel->peer;
+lightningd/channel.c:	wallet_channel_delete(channel->peer->ld->wallet, channel->dbid);
+lightningd/channel.c:	channel->peer = peer;
+lightningd/channel.c:	channel->dbid = dbid;
+lightningd/channel.c:	channel->error = NULL;
+lightningd/channel.c:		channel->their_shachain = *their_shachain;
+lightningd/channel.c:		channel->their_shachain.id = 0;
+lightningd/channel.c:		shachain_init(&channel->their_shachain.chain);
+lightningd/channel.c:	channel->state = state;
+lightningd/channel.c:	channel->funder = funder;
+lightningd/channel.c:	channel->owner = NULL;
+lightningd/channel.c:	memset(&channel->billboard, 0, sizeof(channel->billboard));
+lightningd/channel.c:	channel->billboard.transient = tal_strdup(channel, transient_billboard);
+lightningd/channel.c:		channel->log = new_log(channel,
+lightningd/channel.c:		channel->log = tal_steal(channel, log);
+lightningd/channel.c:	channel->channel_flags = channel_flags;
+lightningd/channel.c:	channel->our_config = *our_config;
+lightningd/channel.c:	channel->minimum_depth = minimum_depth;
+lightningd/channel.c:	channel->next_index[LOCAL] = next_index_local;
+lightningd/channel.c:	channel->next_index[REMOTE] = next_index_remote;
+lightningd/channel.c:	channel->next_htlc_id = next_htlc_id;
+lightningd/channel.c:	channel->funding_txid = *funding_txid;
+lightningd/channel.c:	channel->funding_outnum = funding_outnum;
+lightningd/channel.c:	channel->funding_satoshi = funding_satoshi;
+lightningd/channel.c:	channel->push_msat = push_msat;
+lightningd/channel.c:	channel->remote_funding_locked = remote_funding_locked;
+lightningd/channel.c:	channel->scid = tal_steal(channel, scid);
+lightningd/channel.c:	channel->our_msatoshi = our_msatoshi;
+lightningd/channel.c:	channel->msatoshi_to_us_min = msatoshi_to_us_min;
+lightningd/channel.c:	channel->msatoshi_to_us_max = msatoshi_to_us_max;
+lightningd/channel.c:	channel->last_tx = tal_steal(channel, last_tx);
+lightningd/channel.c:	channel->last_sig = *last_sig;
+lightningd/channel.c:	channel->last_htlc_sigs = tal_steal(channel, last_htlc_sigs);
+lightningd/channel.c:	channel->channel_info = *channel_info;
+lightningd/channel.c:	channel->remote_shutdown_scriptpubkey
+lightningd/channel.c:	channel->final_key_idx = final_key_idx;
+lightningd/channel.c:	channel->last_was_revoke = last_was_revoke;
+lightningd/channel.c:	channel->last_sent_commit = tal_steal(channel, last_sent_commit);
+lightningd/channel.c:	channel->first_blocknum = first_blocknum;
+lightningd/channel.c:	channel->min_possible_feerate = min_possible_feerate;
+lightningd/channel.c:	channel->max_possible_feerate = max_possible_feerate;
+lightningd/channel.c:	channel->connected = connected;
+lightningd/channel.c:	derive_channel_seed(peer->ld, &channel->seed, &peer->id, channel->dbid);
+lightningd/channel.c:	list_add_tail(&peer->channels, &channel->list);
+lightningd/channel.c:							 channel->final_key_idx)));
+lightningd/channel.c:	return channel_state_str(channel->state);
+lightningd/channel.c:	channel->last_sig = *sig;
+lightningd/channel.c:	tal_free(channel->last_tx);
+lightningd/channel.c:	channel->last_tx = tal_steal(channel, tx);
+lightningd/channel.c:	log_info(channel->log, "State changed from %s to %s",
+lightningd/channel.c:	if (channel->state != old_state)
+lightningd/channel.c:	channel->state = state;
+lightningd/channel.c:	wallet_channel_save(channel->peer->ld->wallet, channel);
+lightningd/channel.c:	struct lightningd *ld = channel->peer->ld;
+lightningd/channel.c:	log_unusual(channel->log, "Peer permanent failure in %s: %s",
+lightningd/channel.c:	if (!channel->error) {
+lightningd/channel.c:				  &channel->funding_txid,
+lightningd/channel.c:				  channel->funding_outnum);
+lightningd/channel.c:		channel->error = towire_errorfmt(channel, &cid, "%s", why);
+lightningd/channel.c:	log_broken(channel->log, "Peer internal error %s: %s",
+lightningd/channel.c:		p = &channel->billboard.permanent[channel->state];
+lightningd/channel.c:		p = &channel->billboard.transient;
+lightningd/channel.c:	log_info(channel->log, "Peer transient failure in %s: %s",
+lightningd/channel.c:	if (dev_disconnect_permanent(channel->peer->ld)) {
+lightningd/dev_ping.c:		    || !channel->owner
+lightningd/dev_ping.c:		    || !streq(channel->owner->name, "lightning_channeld")) {
+lightningd/dev_ping.c:				     channel && channel->owner
+lightningd/dev_ping.c:				     ? channel->owner->name
+lightningd/dev_ping.c:		owner = channel->owner;
+lightningd/gossip_control.c:	"dev-query-channel-range",
+Binary file lightningd/lightningd matches
+lightningd/peer_htlcs.c:	log_debug(channel->log, "HTLC %s %"PRIu64" %s->%s",
+lightningd/peer_htlcs.c:	wallet_htlc_update(channel->peer->ld->wallet,
+lightningd/peer_htlcs.c:	wallet_htlc_update(channel->peer->ld->wallet, hout->dbid, newstate,
+lightningd/peer_htlcs.c:	if (!hin->key.channel->owner)
+lightningd/peer_htlcs.c:	subd_send_msg(hin->key.channel->owner,
+lightningd/peer_htlcs.c:	log_info(hin->key.channel->log, "failed htlc %"PRIu64" code 0x%04x (%s)",
+lightningd/peer_htlcs.c:			     hout->key.channel->scid);
+lightningd/peer_htlcs.c:		payment_failed(hout->key.channel->peer->ld, hout, localfail);
+lightningd/peer_htlcs.c:	log_debug(hin->key.channel->log, "HTLC %"PRIu64" incorrect amount:"
+lightningd/peer_htlcs.c:	log_debug(hin->key.channel->log, "HTLC %"PRIu64" incorrect CLTV:"
+lightningd/peer_htlcs.c:	struct wallet *wallet = channel->peer->ld->wallet;
+lightningd/peer_htlcs.c:					       channel->dbid,
+lightningd/peer_htlcs.c:	if (!channel->owner) {
+lightningd/peer_htlcs.c:		log_debug(channel->log, "HTLC fulfilled, but no owner.");
+lightningd/peer_htlcs.c:	subd_send_msg(channel->owner, take(msg));
+lightningd/peer_htlcs.c:	struct lightningd *ld = hin->key.channel->peer->ld;
+lightningd/peer_htlcs.c:		log_debug(hin->key.channel->log,
+lightningd/peer_htlcs.c:	log_debug(hout->key.channel->log,
+lightningd/peer_htlcs.c:					hout->key.channel->scid);
+lightningd/peer_htlcs.c:	struct lightningd *ld = hin->key.channel->peer->ld;
+lightningd/peer_htlcs.c:		log_debug(hin->key.channel->log,
+lightningd/peer_htlcs.c:		log_debug(hin->key.channel->log,
+lightningd/peer_htlcs.c:	struct lightningd *ld = channel->peer->ld;
+lightningd/peer_htlcs.c:	if (channel->peer->ignore_htlcs) {
+lightningd/peer_htlcs.c:		log_debug(channel->log, "their htlc %"PRIu64" dev_ignore_htlcs",
+lightningd/peer_htlcs.c:	if (channel->state == CHANNELD_SHUTTING_DOWN) {
+lightningd/peer_htlcs.c:		log_debug(channel->log, "Asking gossip to resolve channel %s",
+lightningd/peer_htlcs.c:	log_debug(channel->log, "their htlc %"PRIu64" %s",
+lightningd/peer_htlcs.c:	struct lightningd *ld = channel->peer->ld;
+lightningd/peer_htlcs.c:						channel->dbid,
+lightningd/peer_htlcs.c:	struct lightningd *ld = channel->peer->ld;
+lightningd/peer_htlcs.c:	struct lightningd *ld = channel->peer->ld;
+lightningd/peer_htlcs.c:	struct lightningd *ld = channel->peer->ld;
+lightningd/peer_htlcs.c:	log_debug(channel->log, "Our HTLC %"PRIu64" failed (%u)", failed->id,
+lightningd/peer_htlcs.c:	struct lightningd *ld = channel->peer->ld;
+lightningd/peer_htlcs.c:	struct lightningd *ld = channel->peer->ld;
+lightningd/peer_htlcs.c:				hout->key.channel->scid);
+lightningd/peer_htlcs.c:	log_debug(channel->log, "Removing in HTLC %"PRIu64" state %s %s",
+lightningd/peer_htlcs.c:		log_debug(channel->log, "Balance %"PRIu64" -> %"PRIu64,
+lightningd/peer_htlcs.c:			  channel->our_msatoshi,
+lightningd/peer_htlcs.c:			  channel->our_msatoshi + hin->msatoshi);
+lightningd/peer_htlcs.c:		channel->our_msatoshi += hin->msatoshi;
+lightningd/peer_htlcs.c:		if (channel->our_msatoshi > channel->msatoshi_to_us_max)
+lightningd/peer_htlcs.c:			channel->msatoshi_to_us_max = channel->our_msatoshi;
+lightningd/peer_htlcs.c:	log_debug(channel->log, "Removing out HTLC %"PRIu64" state %s %s",
+lightningd/peer_htlcs.c:		log_debug(channel->log, "Balance %"PRIu64" -> %"PRIu64,
+lightningd/peer_htlcs.c:			  channel->our_msatoshi,
+lightningd/peer_htlcs.c:			  channel->our_msatoshi - hout->msatoshi);
+lightningd/peer_htlcs.c:		channel->our_msatoshi -= hout->msatoshi;
+lightningd/peer_htlcs.c:		if (channel->our_msatoshi < channel->msatoshi_to_us_min)
+lightningd/peer_htlcs.c:			channel->msatoshi_to_us_min = channel->our_msatoshi;
+lightningd/peer_htlcs.c:	struct lightningd *ld = channel->peer->ld;
+lightningd/peer_htlcs.c:	struct lightningd *ld = channel->peer->ld;
+lightningd/peer_htlcs.c:						      channel->dbid,
+lightningd/peer_htlcs.c:	if (commitnum != channel->next_index[LOCAL]) {
+lightningd/peer_htlcs.c:			   channel->next_index[LOCAL], commitnum);
+lightningd/peer_htlcs.c:	channel->next_index[LOCAL]++;
+lightningd/peer_htlcs.c:	/* Update channel->last_sig and channel->last_tx before saving to db */
+lightningd/peer_htlcs.c:	struct lightningd *ld = channel->peer->ld;
+lightningd/peer_htlcs.c:	if (commitnum != channel->next_index[REMOTE]) {
+lightningd/peer_htlcs.c:			   channel->next_index[REMOTE], commitnum);
+lightningd/peer_htlcs.c:	channel->next_index[REMOTE]++;
+lightningd/peer_htlcs.c:	struct lightningd *ld = channel->peer->ld;
+lightningd/peer_htlcs.c:		if (maxid != channel->next_htlc_id + num_local_added - 1) {
+lightningd/peer_htlcs.c:				   num_local_added, maxid, channel->next_htlc_id);
+lightningd/peer_htlcs.c:		channel->next_htlc_id += num_local_added;
+lightningd/peer_htlcs.c:	channel->channel_info.feerate_per_kw[REMOTE] = feerate;
+lightningd/peer_htlcs.c:	if (feerate > channel->max_possible_feerate)
+lightningd/peer_htlcs.c:		channel->max_possible_feerate = feerate;
+lightningd/peer_htlcs.c:	if (feerate < channel->min_possible_feerate)
+lightningd/peer_htlcs.c:		channel->min_possible_feerate = feerate;
+lightningd/peer_htlcs.c:	channel->last_was_revoke = false;
+lightningd/peer_htlcs.c:	tal_free(channel->last_sent_commit);
+lightningd/peer_htlcs.c:	channel->last_sent_commit = tal_steal(channel, changed_htlcs);
+lightningd/peer_htlcs.c:	subd_send_msg(channel->owner,
+lightningd/peer_htlcs.c:	struct lightningd *ld = channel->peer->ld;
+lightningd/peer_htlcs.c:	    || added->amount_msat < channel->our_config.htlc_minimum_msat) {
+lightningd/peer_htlcs.c:				    channel->our_config.htlc_minimum_msat);
+lightningd/peer_htlcs.c:	wallet_channel_stats_incr_in_offered(ld->wallet, channel->dbid,
+lightningd/peer_htlcs.c:	log_debug(channel->log, "Adding their HTLC %"PRIu64, added->id);
+lightningd/peer_htlcs.c:	connect_htlc_in(&channel->peer->ld->htlcs_in, hin);
+lightningd/peer_htlcs.c:	channel->last_was_revoke = true;
+lightningd/peer_htlcs.c:	struct lightningd *ld = channel->peer->ld;
+lightningd/peer_htlcs.c:	log_debug(channel->log,
+lightningd/peer_htlcs.c:	channel->channel_info.feerate_per_kw[LOCAL]
+lightningd/peer_htlcs.c:		= channel->channel_info.feerate_per_kw[REMOTE]
+lightningd/peer_htlcs.c:	if (feerate > channel->max_possible_feerate)
+lightningd/peer_htlcs.c:		channel->max_possible_feerate = feerate;
+lightningd/peer_htlcs.c:	if (feerate < channel->min_possible_feerate)
+lightningd/peer_htlcs.c:		channel->min_possible_feerate = feerate;
+lightningd/peer_htlcs.c:	tal_free(channel->last_htlc_sigs);
+lightningd/peer_htlcs.c:	channel->last_htlc_sigs = tal_steal(channel, htlc_sigs);
+lightningd/peer_htlcs.c:	wallet_htlc_sigs_save(ld->wallet, channel->dbid,
+lightningd/peer_htlcs.c:			      channel->last_htlc_sigs);
+lightningd/peer_htlcs.c:	subd_send_msg(channel->owner, take(msg));
+lightningd/peer_htlcs.c:	struct channel_info *ci = &channel->channel_info;
+lightningd/peer_htlcs.c:	struct lightningd *ld = channel->peer->ld;
+lightningd/peer_htlcs.c:	log_debug(channel->log,
+lightningd/peer_htlcs.c:	if (revokenum != revocations_received(&channel->their_shachain.chain)) {
+lightningd/peer_htlcs.c:				    revocations_received(&channel->their_shachain.chain), revokenum);
+lightningd/peer_htlcs.c:				      &channel->their_shachain,
+lightningd/peer_htlcs.c:	subd_send_msg(channel->owner, take(msg));
+lightningd/peer_htlcs.c:	struct lightningd *ld = channel->peer->ld;
+lightningd/peer_htlcs.c:			if (hout->key.channel->error)
+lightningd/peer_htlcs.c:			if (channel->error)
+lightningd/peer_htlcs.c:		if (!channel->owner)
+lightningd/peer_htlcs.c:		subd_send_msg(channel->owner, take(msg));
+lightningd/watch.c:	log_debug(txw->channel->log,
+lightningd/watch.c:	log_debug(txow->channel->log,
+lightningd/closing_control.c:	fee = channel->funding_satoshi;
+lightningd/closing_control.c:	last_fee = channel->funding_satoshi;
+lightningd/closing_control.c:	for (i = 0; i < tal_count(channel->last_tx->output); i++)
+lightningd/closing_control.c:		last_fee -= channel->last_tx->output[i].amount;
+lightningd/closing_control.c:	log_debug(channel->log, "Their actual closing tx fee is %"PRIu64
+lightningd/closing_control.c:		log_debug(channel->log, "... That's below our min %"PRIu64
+lightningd/closing_control.c:	struct lightningd *ld = channel->peer->ld;
+lightningd/closing_control.c:	subd_send_msg(channel->owner,
+lightningd/closing_control.c:	if (channel->state == CLOSINGD_COMPLETE)
+lightningd/closing_control.c:	drop_to_chain(channel->peer->ld, channel, true);
+lightningd/closing_control.c:	struct lightningd *ld = channel->peer->ld;
+lightningd/closing_control.c:	if (!channel->remote_shutdown_scriptpubkey) {
+lightningd/closing_control.c:					   channel, channel->log, true,
+lightningd/closing_control.c:	if (!channel->owner) {
+lightningd/closing_control.c:		log_unusual(channel->log, "Could not subdaemon closing: %s",
+lightningd/closing_control.c:	feelimit = commit_tx_base_fee(channel->channel_info.feerate_per_kw[LOCAL],
+lightningd/closing_control.c:		= revocations_received(&channel->their_shachain.chain);
+lightningd/closing_control.c:	funding_msatoshi = channel->funding_satoshi * 1000;
+lightningd/closing_control.c:	our_msatoshi = channel->our_msatoshi;
+lightningd/closing_control.c:				      &channel->seed,
+lightningd/closing_control.c:				      &channel->funding_txid,
+lightningd/closing_control.c:				      channel->funding_outnum,
+lightningd/closing_control.c:				      channel->funding_satoshi,
+lightningd/closing_control.c:				      &channel->channel_info.remote_fundingkey,
+lightningd/closing_control.c:				      channel->funder,
+lightningd/closing_control.c:				      channel->our_config.dust_limit_satoshis,
+lightningd/closing_control.c:							channel->final_key_idx),
+lightningd/closing_control.c:				      channel->remote_shutdown_scriptpubkey,
+lightningd/closing_control.c:				      channel->next_index[LOCAL],
+lightningd/closing_control.c:				      channel->next_index[REMOTE],
+lightningd/closing_control.c:	subd_send_msg(channel->owner, take(initmsg));
+lightningd/closing_control.c:	if (channel->scid)
+lightningd/closing_control.c:		subd_send_msg(channel->peer->ld->gossip,
+lightningd/closing_control.c:				  tmpctx, channel->scid)));
+Binary file lightningd/lightning_channeld matches
+lightningd/options.c:	    "--dev-channel-update-interval=<s>", opt_set_u32, opt_show_u32,
+lightningd/channel_control.c:	assert(channel->scid);
+lightningd/channel_control.c:	assert(channel->remote_funding_locked);
+lightningd/channel_control.c:	if (channel->remote_funding_locked) {
+lightningd/channel_control.c:	log_debug(channel->log, "Got funding_locked");
+lightningd/channel_control.c:	channel->remote_funding_locked = true;
+lightningd/channel_control.c:	if (channel->scid)
+lightningd/channel_control.c:	struct lightningd *ld = channel->peer->ld;
+lightningd/channel_control.c:	tal_free(channel->remote_shutdown_scriptpubkey);
+lightningd/channel_control.c:	channel->remote_shutdown_scriptpubkey = scriptpubkey;
+lightningd/channel_control.c:	if (channel->state != CHANNELD_SHUTTING_DOWN)
+lightningd/channel_control.c:				  channel->state, CHANNELD_SHUTTING_DOWN);
+lightningd/channel_control.c:	/* This sets channel->owner, closes down channeld. */
+lightningd/channel_control.c:	struct lightningd *ld = channel->peer->ld;
+lightningd/channel_control.c:	msg = towire_hsm_client_hsmfd(tmpctx, &channel->peer->id, HSM_CAP_SIGN_GOSSIP | HSM_CAP_ECDH);
+lightningd/channel_control.c:					   channel->log, true,
+lightningd/channel_control.c:	if (!channel->owner) {
+lightningd/channel_control.c:		log_unusual(channel->log, "Could not subdaemon channel: %s",
+lightningd/channel_control.c:	if (channel->scid) {
+lightningd/channel_control.c:		funding_channel_id = *channel->scid;
+lightningd/channel_control.c:		log_debug(channel->log, "Already have funding locked in%s",
+lightningd/channel_control.c:		log_debug(channel->log, "Waiting for funding confirmations");
+lightningd/channel_control.c:	num_revocations = revocations_received(&channel->their_shachain.chain);
+lightningd/channel_control.c:		log_debug(channel->log, "Ignoring fee limits!");
+lightningd/channel_control.c:				      &channel->funding_txid,
+lightningd/channel_control.c:				      channel->funding_outnum,
+lightningd/channel_control.c:				      channel->funding_satoshi,
+lightningd/channel_control.c:				      &channel->our_config,
+lightningd/channel_control.c:				      &channel->channel_info.their_config,
+lightningd/channel_control.c:				      channel->channel_info.feerate_per_kw,
+lightningd/channel_control.c:				      &channel->last_sig,
+lightningd/channel_control.c:				      &channel->channel_info.remote_fundingkey,
+lightningd/channel_control.c:				      &channel->channel_info.theirbase.revocation,
+lightningd/channel_control.c:				      &channel->channel_info.theirbase.payment,
+lightningd/channel_control.c:				      &channel->channel_info.theirbase.htlc,
+lightningd/channel_control.c:				      &channel->channel_info.theirbase.delayed_payment,
+lightningd/channel_control.c:				      &channel->channel_info.remote_per_commit,
+lightningd/channel_control.c:				      &channel->channel_info.old_remote_per_commit,
+lightningd/channel_control.c:				      channel->funder,
+lightningd/channel_control.c:				      channel->our_msatoshi,
+lightningd/channel_control.c:				      &channel->seed,
+lightningd/channel_control.c:				      &channel->peer->id,
+lightningd/channel_control.c:				      channel->last_was_revoke,
+lightningd/channel_control.c:				      channel->last_sent_commit,
+lightningd/channel_control.c:				      channel->next_index[LOCAL],
+lightningd/channel_control.c:				      channel->next_index[REMOTE],
+lightningd/channel_control.c:				      channel->next_htlc_id,
+lightningd/channel_control.c:				      channel->scid != NULL,
+lightningd/channel_control.c:				      channel->remote_funding_locked,
+lightningd/channel_control.c:				      channel->state == CHANNELD_SHUTTING_DOWN,
+lightningd/channel_control.c:				      channel->remote_shutdown_scriptpubkey != NULL,
+lightningd/channel_control.c:							channel->final_key_idx),
+lightningd/channel_control.c:				      channel->channel_flags,
+lightningd/channel_control.c:	subd_send_msg(channel->owner, take(initmsg));
+lightningd/channel_control.c:	if (channel->state != CHANNELD_AWAITING_LOCKIN
+lightningd/channel_control.c:	    && channel->state != CHANNELD_NORMAL) {
+lightningd/channel_control.c:		log_debug(channel->log,
+lightningd/channel_control.c:	if (!channel->owner) {
+lightningd/channel_control.c:		log_debug(channel->log,
+lightningd/channel_control.c:	subd_send_msg(channel->owner,
+lightningd/channel_control.c:		      take(towire_channel_funding_locked(NULL, channel->scid,
+lightningd/channel_control.c:	if (channel->remote_funding_locked
+lightningd/channel_control.c:	    && channel->state == CHANNELD_AWAITING_LOCKIN)
+lightningd/channel_control.c:	if (channel->funder == LOCAL)
+lightningd/channel_control.c:	if (channel->scid)
+lightningd/channel_control.c:	if (block_height < channel->first_blocknum)
+lightningd/channel_control.c:	if (block_height - channel->first_blocknum < max_funding_unconfirmed)
+lightningd/channel_control.c:		log_unusual(channel->log,
+lightningd/channel_control.c:			    block_height - channel->first_blocknum,
+lightningd/channel_control.c:					   &channel->funding_txid));
+lightningd/opening_control.c:	msg = towire_gossipctl_peer_important(NULL, &channel->peer->id, true);
+lightningd/opening_control.c:	log_debug(channel->log, "Getting HSM to sign funding tx");
+lightningd/opening_control.c:	msg = towire_hsm_sign_funding(tmpctx, channel->funding_satoshi,
+lightningd/opening_control.c:	json_add_txid(response, "txid", &channel->funding_txid);
+lightningd/opening_control.c:	derive_channel_id(&cid, &channel->funding_txid, funding_outnum);
+lightningd/opening_control.c:	log_debug(channel->log, "Watching funding tx %s",
+lightningd/opening_control.c:				    &channel->funding_txid));
+Binary file lightningd/peer_control.o matches
+lightningd/peer_control.c:	assert(!channel->last_tx->input[0].witness);
+lightningd/peer_control.c:	derive_basepoints(&channel->seed, &local_funding_pubkey, NULL, &secrets,
+lightningd/peer_control.c:					      &channel->channel_info.remote_fundingkey);
+lightningd/peer_control.c:	channel->last_tx->input[0].amount = tal_dup(channel->last_tx->input, u64,
+lightningd/peer_control.c:						    &channel->funding_satoshi);
+lightningd/peer_control.c:	sign_tx_input(channel->last_tx, 0, NULL, funding_wscript,
+lightningd/peer_control.c:	channel->last_tx->input[0].witness
+lightningd/peer_control.c:		= bitcoin_witness_2of2(channel->last_tx->input,
+lightningd/peer_control.c:				       &channel->last_sig,
+lightningd/peer_control.c:				       &channel->channel_info.remote_fundingkey,
+lightningd/peer_control.c:	u8 *tx = linearize_tx(result, cc->channel->last_tx);
+lightningd/peer_control.c:	bitcoin_txid(cc->channel->last_tx, &txid);
+lightningd/peer_control.c:	msg = towire_gossipctl_peer_important(NULL, &channel->peer->id, false);
+lightningd/peer_control.c:	broadcast_tx(ld->topology, channel, channel->last_tx, NULL);
+lightningd/peer_control.c:	remove_sig(channel->last_tx);
+lightningd/peer_control.c:	struct lightningd *ld = channel->peer->ld;
+lightningd/peer_control.c:				       channel->owner->name, desc);
+lightningd/peer_control.c:	if (err_for_them && !channel->error)
+lightningd/peer_control.c:		channel->error = tal_dup_arr(channel, u8,
+lightningd/peer_control.c:	channel->connected = false;
+lightningd/peer_control.c:			       channel->owner->name,
+lightningd/peer_control.c:	msg = towire_gossipctl_hand_back_peer(NULL, &channel->peer->id,
+lightningd/peer_control.c:		log_debug(channel->log, "Peer has reconnected, state %s",
+lightningd/peer_control.c:		if (channel->error) {
+lightningd/peer_control.c:			error = channel->error;
+lightningd/peer_control.c:			error = channel->error;
+lightningd/peer_control.c:		switch (channel->state) {
+lightningd/peer_control.c:			assert(!channel->owner);
+lightningd/peer_control.c:			channel->peer->addr = addr;
+lightningd/peer_control.c:			assert(!channel->owner);
+lightningd/peer_control.c:			channel->peer->addr = addr;
+lightningd/peer_control.c:				  &channel->funding_txid,
+lightningd/peer_control.c:				  channel->funding_outnum);
+lightningd/peer_control.c:		if (channel && channel->error) {
+lightningd/peer_control.c:			error = channel->error;
+lightningd/peer_control.c:		    && channel->state == CLOSINGD_COMPLETE) {
+lightningd/peer_control.c:	struct lightningd *ld = channel->peer->ld;
+lightningd/peer_control.c:	log_debug(channel->log, "Funding tx %s depth %u of %u",
+lightningd/peer_control.c:		  txidstr, depth, channel->minimum_depth);
+lightningd/peer_control.c:	if (depth < channel->minimum_depth)
+lightningd/peer_control.c:	if (!channel->scid) {
+lightningd/peer_control.c:		channel->scid = tal(channel, struct short_channel_id);
+lightningd/peer_control.c:		mk_short_channel_id(channel->scid,
+lightningd/peer_control.c:				    channel->funding_outnum);
+lightningd/peer_control.c:	if (!(channel->channel_flags & CHANNEL_FLAGS_ANNOUNCE_CHANNEL))
+lightningd/peer_control.c:	wallet_channeltxs_add(channel->peer->ld->wallet, channel,
+lightningd/peer_control.c:		   &channel->funding_txid, funding_lockin_cb);
+lightningd/peer_control.c:		  &channel->funding_txid, channel->funding_outnum,
+lightningd/peer_control.c:			connected = channel && channel->connected;
+lightningd/peer_control.c:			u64 our_reserve_msat = channel->channel_info.their_config.channel_reserve_satoshis * 1000;
+lightningd/peer_control.c:			if (channel->owner)
+lightningd/peer_control.c:						channel->owner->name);
+lightningd/peer_control.c:			if (channel->scid)
+lightningd/peer_control.c:							  channel->scid);
+lightningd/peer_control.c:					  &channel->funding_txid,
+lightningd/peer_control.c:					  channel->funding_outnum);
+lightningd/peer_control.c:				      &channel->funding_txid);
+lightningd/peer_control.c:				     channel->our_msatoshi);
+lightningd/peer_control.c:				     channel->msatoshi_to_us_min);
+lightningd/peer_control.c:				     channel->msatoshi_to_us_max);
+lightningd/peer_control.c:				     channel->funding_satoshi * 1000);
+lightningd/peer_control.c:				     channel->our_config.dust_limit_satoshis);
+lightningd/peer_control.c:				     channel->our_config.max_htlc_value_in_flight_msat);
+lightningd/peer_control.c:				     channel->our_config.channel_reserve_satoshis);
+lightningd/peer_control.c:				     channel->channel_info.their_config.channel_reserve_satoshis);
+lightningd/peer_control.c:					     channel->our_config.channel_reserve_satoshis);
+lightningd/peer_control.c:			if (channel->our_msatoshi <= our_reserve_msat)
+lightningd/peer_control.c:					     channel->our_msatoshi - our_reserve_msat);
+lightningd/peer_control.c:				     channel->our_config.htlc_minimum_msat);
+lightningd/peer_control.c:				     channel->our_config.to_self_delay);
+lightningd/peer_control.c:				     channel->channel_info.their_config.to_self_delay);
+lightningd/peer_control.c:					     channel->our_config.to_self_delay);
+lightningd/peer_control.c:				     channel->our_config.max_accepted_htlcs);
+lightningd/peer_control.c:			     i < ARRAY_SIZE(channel->billboard.permanent);
+lightningd/peer_control.c:				if (!channel->billboard.permanent[i])
+lightningd/peer_control.c:						channel->billboard.permanent[i]);
+lightningd/peer_control.c:			if (channel->billboard.transient)
+lightningd/peer_control.c:						channel->billboard.transient);
+lightningd/peer_control.c:						  channel->dbid,
+lightningd/peer_control.c:					  &channel->funding_txid,
+lightningd/peer_control.c:					  channel->funding_outnum);
+lightningd/peer_control.c:			if (channel->scid && channel->scid->u64 == scid.u64)
+lightningd/peer_control.c:	if (channel->state != CHANNELD_NORMAL &&
+lightningd/peer_control.c:	    channel->state != CHANNELD_AWAITING_LOCKIN &&
+lightningd/peer_control.c:	    channel->state != CHANNELD_SHUTTING_DOWN &&
+lightningd/peer_control.c:	    channel->state != CLOSINGD_SIGEXCHANGE)
+lightningd/peer_control.c:	if (channel->state == CHANNELD_NORMAL || channel->state == CHANNELD_AWAITING_LOCKIN) {
+lightningd/peer_control.c:				  channel->state, CHANNELD_SHUTTING_DOWN);
+lightningd/peer_control.c:		if (channel->owner)
+lightningd/peer_control.c:			subd_send_msg(channel->owner,
+lightningd/peer_control.c:	log_debug(channel->log, "dev-sign-last-tx: signing tx with %zu outputs",
+lightningd/peer_control.c:		  tal_count(channel->last_tx->output));
+lightningd/peer_control.c:	linear = linearize_tx(cmd, channel->last_tx);
+lightningd/peer_control.c:	remove_sig(channel->last_tx);
+lightningd/peer_control.c:	if (!channel->owner) {
+lightningd/peer_control.c:	if (!streq(channel->owner->name, "lightning_channeld")) {
+lightningd/peer_control.c:			     "Peer owned by %s", channel->owner->name);
+lightningd/peer_control.c:	subd_req(peer, channel->owner, take(msg), -1, 0,
+lightningd/peer_control.c:	json_add_txid(response, "funding_txid", &forget->channel->funding_txid);
+lightningd/peer_control.c:			if (!channel->scid)
+lightningd/peer_control.c:			if (!structeq(channel->scid, &scid))
+lightningd/peer_control.c:			  &forget->channel->funding_txid,
+lightningd/peer_control.c:			  forget->channel->funding_outnum,
+Binary file lightningd/channel_control.o matches
+lightningd/onchain_control.c:	struct lightningd *ld = channel->peer->ld;
+lightningd/onchain_control.c:		subd_send_msg(channel->owner, take(msg));
+lightningd/onchain_control.c:	subd_send_msg(channel->owner, take(msg));
+lightningd/onchain_control.c:	u32 blockheight = channel->peer->ld->topology->tip->height;
+lightningd/onchain_control.c:		log_unusual(channel->log, "Chain reorganization!");
+lightningd/onchain_control.c:	wallet_channeltxs_add(channel->peer->ld->wallet, channel,
+lightningd/onchain_control.c:	subd_send_msg(channel->owner, take(msg));
+lightningd/onchain_control.c:	wallet_channeltxs_add(channel->peer->ld->wallet, channel,
+lightningd/onchain_control.c:	struct lightningd *ld = channel->peer->ld;
+lightningd/onchain_control.c:	txw = watch_tx(channel->owner, ld->topology, channel, tx,
+lightningd/onchain_control.c:	broadcast_tx(channel->peer->ld->topology, channel, tx, NULL);
+lightningd/onchain_control.c:	txw = find_txwatch(channel->peer->ld->topology, &txid, channel);
+lightningd/onchain_control.c:		log_unusual(channel->log, "Can't unwatch txid %s",
+lightningd/onchain_control.c:	free_htlcs(channel->peer->ld, channel);
+lightningd/onchain_control.c:	log_info(channel->log, "onchaind complete, forgetting peer");
+lightningd/onchain_control.c:	u->close_info->channel_id = channel->dbid;
+lightningd/onchain_control.c:	u->close_info->peer_id = channel->peer->id;
+lightningd/onchain_control.c:	outpointfilter_add(channel->peer->ld->wallet->owned_outpoints, &u->txid, u->outnum);
+lightningd/onchain_control.c:	wallet_add_utxo(channel->peer->ld->wallet, u, p2wpkh);
+lightningd/onchain_control.c:	log_debug(channel->log,
+lightningd/onchain_control.c:	log_broken(channel->log, "%s", desc);
+lightningd/onchain_control.c:	struct lightningd *ld = channel->peer->ld;
+lightningd/onchain_control.c:	channel_set_state(channel, channel->state, FUNDING_SPEND_SEEN);
+lightningd/onchain_control.c:						    channel->log, false,
+lightningd/onchain_control.c:	if (!channel->owner) {
+lightningd/onchain_control.c:		log_broken(channel->log, "Could not subdaemon onchain: %s",
+lightningd/onchain_control.c:		log_broken(channel->log, "Could not load htlc_stubs");
+lightningd/onchain_control.c:			  channel->final_key_idx)) {
+lightningd/onchain_control.c:		log_broken(channel->log, "Could not derive onchain key %"PRIu64,
+lightningd/onchain_control.c:			   channel->final_key_idx);
+lightningd/onchain_control.c:	bitcoin_txid(channel->last_tx, &our_last_txid);
+lightningd/onchain_control.c:				  &channel->seed, &channel->their_shachain.chain,
+lightningd/onchain_control.c:				  channel->funding_satoshi,
+lightningd/onchain_control.c:				  &channel->channel_info.old_remote_per_commit,
+lightningd/onchain_control.c:				  &channel->channel_info.remote_per_commit,
+lightningd/onchain_control.c:				  channel->channel_info.their_config.to_self_delay,
+lightningd/onchain_control.c:				  channel->our_config.to_self_delay,
+lightningd/onchain_control.c:				  channel->our_config.dust_limit_satoshis,
+lightningd/onchain_control.c:				  &channel->channel_info.theirbase.revocation,
+lightningd/onchain_control.c:						    channel->final_key_idx),
+lightningd/onchain_control.c:				  channel->remote_shutdown_scriptpubkey,
+lightningd/onchain_control.c:				  channel->funder,
+lightningd/onchain_control.c:				  &channel->channel_info.theirbase.payment,
+lightningd/onchain_control.c:				  &channel->channel_info.theirbase.htlc,
+lightningd/onchain_control.c:				  &channel->channel_info.theirbase.delayed_payment,
+lightningd/onchain_control.c:				  channel->last_htlc_sigs,
+lightningd/onchain_control.c:				  channel->min_possible_feerate,
+lightningd/onchain_control.c:				  channel->max_possible_feerate);
+lightningd/onchain_control.c:	subd_send_msg(channel->owner, take(msg));
+lightningd/onchain_control.c:		subd_send_msg(channel->owner, take(msg));
+onchaind/onchain.c:	 * [BOLT #2: Channel Close](02-peer-protocol.md#channel-close)).
+tests/test_gossip.py:    opts = {'dev-channel-update-interval': 5}
+tests/test_lightningd.py:    # Returns the short channel-id: <blocknum>:<txnum>:<outnum>
+tools/generate-wire.py:            # eg commit_sig,0,channel-id,8 OR
+tools/generate-wire.py:            #    commit_sig,0,channel-id,u64
+Binary file wallet/test/run-wallet.o matches
+wallet/test/run-wallet.c:	assert(channel->dbid == dbid);
+Binary file wallet/test/run-wallet matches

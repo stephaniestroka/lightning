@@ -174,13 +174,14 @@ CFLAGS = $(CPPFLAGS) $(CWARNFLAGS) $(CDEBUGFLAGS) -I $(CCANDIR) $(EXTERNAL_INCLU
 CONFIGURATOR_CC := $(CC)
 
 LDFLAGS = $(PIE_LDFLAGS)
-LDLIBS = -L/usr/local/lib -lm -lgmp -lsqlite3 -lz $(COVFLAGS)
+LDLIBS = -L/usr/local/lib -lm -lgmp -lsqlite3 -lz -ludev $(COVFLAGS)
 
 default: all-programs all-test-programs
 
 config.vars ccan/config.h: configure
 	@if [ ! -f config.vars ]; then echo 'The 1990s are calling: use ./configure!' >&2; exit 1; fi
 	./configure --reconfigure
+
 
 include external/Makefile
 include bitcoin/Makefile
