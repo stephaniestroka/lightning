@@ -3,7 +3,8 @@ SUBMODULES =					\
 	external/libwally-core			\
 	external/jsmn				\
 	external/libbase58			\
-	external/libbacktrace
+	external/libbacktrace \
+	external/yajl
 
 LIBSODIUM_HEADERS := external/libsodium/src/libsodium/include/sodium.h
 LIBWALLY_HEADERS := external/libwally-core/include/wally_bip32.h		\
@@ -13,7 +14,7 @@ LIBSECP_HEADERS := external/libwally-core/src/secp256k1/include/secp256k1_ecdh.h
 		external/libwally-core/src/secp256k1/include/secp256k1.h
 JSMN_HEADERS := external/jsmn/jsmn.h
 LIBBASE58_HEADERS := external/libbase58/libbase58.h
-LIBYAJL_HEADERS := external/yajl/include/yajl/yajl_tree.h external/yajl/include/yajl/yajl_common.h external/yajl/include/yajl/yajl_parse.h external/yajl/include/yajl/yajl_version.h external/yajl/include/yajl/yajl_gen.h
+LIBYAJL_HEADERS := external/yajl/src/api/yajl_tree.h external/yajl/src/api/yajl_common.h external/yajl/src/api/yajl_parse.h external/yajl/src/api/yajl_version.h external/yajl/src/api/yajl_gen.h
 
 EXTERNAL_HEADERS := $(LIBSODIUM_HEADERS) $(LIBWALLY_HEADERS) $(LIBSECP_HEADERS) $(JSMN_HEADERS) $(LIBBASE58_HEADERS) $(LIBYAJL_HEADERS)
 EXTERNAL_LIBS := external/libwallycore.a external/libsecp256k1.a external/libsodium.a external/libjsmn.a external/libbase58.a external/libbacktrace.a external/libyajl_s.a
@@ -26,7 +27,7 @@ EXTERNAL_INCLUDE_FLAGS :=					\
 	-I external/libbase58/					\
 	-I external/libbacktrace/				\
 	-I external/libbacktrace-build \
-	-I external/yajl/include/yajl
+	-I external/yajl-build/yajl-2.1.1/include/yajl/
 
 EXTERNAL_LDLIBS := -Lexternal $(patsubst lib%.a,-l%,$(notdir $(EXTERNAL_LIBS)))
 
@@ -85,6 +86,13 @@ external/libbacktrace.a: external/libbacktrace/backtrace.h
 	@mkdir external/libbacktrace-build 2>/dev/null || true
 	cd external/libbacktrace-build && ../libbacktrace/configure CC="$(CC)" --enable-static=yes --with-pic --host="$(MAKE_HOST)" --build="$(BUILD)" --enable-shared=no --prefix=/ --libdir=/ && $(MAKE)
 	$(MAKE) -C external/libbacktrace-build DESTDIR=$$(pwd)/external install-exec
+
+external/yajl/src/api/yajl_tree.h: submodcheck
+
+external/libyajl_s.a: external/yajl/src/api/yajl_tree.h
+	@mkdir external/yajl-build 2>/dev/null || true
+	cd external/yajl-build/ && cmake ../yajl && $(MAKE) && cp yajl-2.1.1/lib/libyajl_s.a ../
+
 
 distclean: external-distclean
 clean: external-clean

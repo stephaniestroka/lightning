@@ -43,6 +43,7 @@ daemon/test/run-maxfee
 external/libbacktrace-build/
 external/libbacktrace.a
 external/libbacktrace.la
+external/yajl-build/
 gossipd/test/run-find_route-specific
 gossipd/test/run-initiator-success
 gossipd/test/run-responder-success
