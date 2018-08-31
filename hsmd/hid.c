@@ -630,7 +630,6 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 
 	/* If we have a good handle, return it. */
 	if (dev->device_handle > 0) {
-
 		/* Get the report descriptor */
 		int res, desc_size = 0;
 		struct hidraw_report_descriptor rpt_desc;

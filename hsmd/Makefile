@@ -14,7 +14,7 @@ LIGHTNINGD_HSM_CLIENT_OBJS := $(LIGHTNINGD_HSM_CLIENT_SRC:.c=.o)
 # lightningd/hsm needs these:
 LIGHTNINGD_HSM_HEADERS := hsmd/gen_hsm_client_wire.h
 
-LIGHTNINGD_HSM_SRC := hsmd/hid.c hsmd/hsm.c	\
+LIGHTNINGD_HSM_SRC := hsmd/bitbox_hid.c hsmd/hid.c hsmd/hsm.c	\
 	$(LIGHTNINGD_HSM_HEADERS:.h=.c)
 LIGHTNINGD_HSM_OBJS := $(LIGHTNINGD_HSM_SRC:.c=.o)
 

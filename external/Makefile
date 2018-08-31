@@ -102,6 +102,7 @@ external-clean:
 	if [ -f external/libsodium/Makefile ]; then make -C external/libsodium clean; fi
 	if [ -f external/libwally-core/Makefile ]; then make -C external/libwally-core clean; fi
 	if [ -f external/ibwally-core/src/Makefile ]; then make -C external/libwally-core/src clean; fi
+	rm -rf external/yajl-build/*
 
 external-distclean:
 	make -C external/libsodium distclean || true

@@ -49,6 +49,7 @@
 #include <wire/wire_io.h>
 #include <yajl_tree.h>
 #include "hidapi.h"
+#include "bitbox_hid.h"
 
 #define REQ_FD 3
 
@@ -1144,6 +1145,60 @@ static void bitcoin_keypair(struct privkey *privkey,
 						"BIP32 pubkey %u create failed", index);
 }
 
+static void maybe_create_new_hsm(void)
+{
+	int fd = open("hsm_secret", O_CREAT|O_EXCL|O_WRONLY, 0400);
+	if (fd < 0) {
+		if (errno == EEXIST)
+			return;
+		status_failed(STATUS_FAIL_INTERNAL_ERROR,
+			      "creating: %s", strerror(errno));
+	}
+
+	randombytes_buf(&secretstuff.hsm_secret, sizeof(secretstuff.hsm_secret));
+	if (!write_all(fd, &secretstuff.hsm_secret, sizeof(secretstuff.hsm_secret))) {
+		unlink_noerr("hsm_secret");
+		status_failed(STATUS_FAIL_INTERNAL_ERROR,
+			      "writing: %s", strerror(errno));
+	}
+	if (fsync(fd) != 0) {
+		unlink_noerr("hsm_secret");
+		status_failed(STATUS_FAIL_INTERNAL_ERROR,
+			      "fsync: %s", strerror(errno));
+	}
+	if (close(fd) != 0) {
+		unlink_noerr("hsm_secret");
+		status_failed(STATUS_FAIL_INTERNAL_ERROR,
+			      "closing: %s", strerror(errno));
+	}
+	fd = open(".", O_RDONLY);
+	if (fd < 0) {
+		status_failed(STATUS_FAIL_INTERNAL_ERROR,
+			      "opening: %s", strerror(errno));
+	}
+	if (fsync(fd) != 0) {
+		unlink_noerr("hsm_secret");
+		status_failed(STATUS_FAIL_INTERNAL_ERROR,
+			      "fsyncdir: %s", strerror(errno));
+	}
+	close(fd);
+	status_unusual("HSM: created new hsm_secret file");
+}
+
+static void load_hsm(void)
+{
+	int fd = open("hsm_secret", O_RDONLY);
+	if (fd < 0)
+		status_failed(STATUS_FAIL_INTERNAL_ERROR,
+			      "opening: %s", strerror(errno));
+	if (!read_all(fd, &secretstuff.hsm_secret, sizeof(secretstuff.hsm_secret)))
+		status_failed(STATUS_FAIL_INTERNAL_ERROR,
+			      "reading: %s", strerror(errno));
+	close(fd);
+
+	populate_secretstuff();
+}
+
 // TODO(stx): add routine that checks if device was removed.
 
 static void init_hsm(struct daemon_conn *master, const u8 *msg)
@@ -1157,23 +1212,27 @@ static void init_hsm(struct daemon_conn *master, const u8 *msg)
 		return;
 	}
 	printf("querying device path\n");
-	// TODO(stx): use product_if of new BitBox
 	short vendor_id = 0x03eb;
 	short product_id = 0x2402;
 	struct hid_device_info* device_info = NULL;
 	do {
 		device_info = hid_enumerate(vendor_id, product_id);
 		if (device_info == NULL) {
+			printf(".");
 			sleep(1);
 		}
 	} while (device_info == NULL);
 	printf("device path: %s\n", device_info->path);
-	hid_open_path(device_info->path);
+	const char* cmd = "{\"seed\":\"\"}";
+	if (open_bitbox(device_info->path)) {
+		char* response = send_to_bitbox(cmd, strlen(cmd));
+		printf("BitBox response: %s\n", response);
+	} else {
+		printf("Failed to open BitBox\n");
+	}
 
-	// Note: we no longer need to read the hsm_secret (it doesn't exist on the client anymore), but
-	// we do still derive BIP32 keys etc in populate_secretstuff() below.
-	// TODO(stx): get rid of this routine
-	populate_secretstuff();
+	maybe_create_new_hsm();
+	load_hsm();
 
 	send_init_response(master);
 }
